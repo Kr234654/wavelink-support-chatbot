@@ -1,0 +1,29 @@
+# Run the whole project with one command:  docker compose up --build
+# Frontend: http://localhost:5173    Backend: http://localhost:8000/api/health
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      ADMIN_KEY: ${ADMIN_KEY:-demo-admin}
+      ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      # Optional: set these in a .env file next to this file to get real AI replies
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+    volumes:
+      - wavelink-data:/data
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  wavelink-data:

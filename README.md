@@ -1,5 +1,7 @@
 # WaveLink: 24/7 AI Customer Support Chatbot
 
+[![CI](https://github.com/Kr234654/wavelink-support-chatbot/actions/workflows/ci.yml/badge.svg)](https://github.com/Kr234654/wavelink-support-chatbot/actions/workflows/ci.yml)
+
 A customer support chat widget built with React, connected to a Python server over WebSockets. Every message goes through a LangGraph workflow that categorizes the question, checks the customer's sentiment, and either answers or hands the chat to a human agent. Escalated chats become tickets that support agents manage in a small dashboard.
 
 The demo site is for a fictional internet provider called **WaveLink**.
@@ -52,6 +54,7 @@ The workflow is in `backend/agent.py`. It follows the LangGraph customer support
 - **Frontend:** React 18, Vite, custom hook (`useChat`), plain CSS
 - **Backend:** Python, FastAPI, WebSockets, LangGraph, LangChain (OpenAI-compatible models), SQLite
 - **Tests:** pytest (workflow, REST, WebSocket, tickets, feedback, rate limiter)
+- **CI/CD and containers:** GitHub Actions (runs the tests and builds the frontend on every push and pull request), Docker, Docker Compose
 
 ## Run it on your computer
 
@@ -98,6 +101,35 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
+## Run with Docker
+
+If you have Docker installed, you can start the whole project with one command and skip the Python and Node setup:
+
+```bash
+docker compose up --build
+```
+
+- Frontend: http://localhost:5173
+- Backend health check: http://localhost:8000/api/health
+- Agent dashboard: http://localhost:5173/#agent (default admin key `demo-admin`)
+
+Tickets and statistics are stored in a Docker volume (`wavelink-data`), so they survive a restart. To use real AI replies or a different admin key, create a `.env` file next to `docker-compose.yml`:
+
+```
+ADMIN_KEY=choose-your-own-password
+LLM_API_KEY=your-key
+```
+
+Stop everything with `docker compose down` (add `-v` to also delete the saved data).
+
+## Continuous integration
+
+Every push to `main` and every pull request runs `.github/workflows/ci.yml`:
+
+1. **Backend:** installs the dependencies and runs `pytest`
+2. **Frontend:** runs `npm ci` and `npm run build`
+3. **Docker:** builds both images, so a broken Dockerfile is caught before deploying
+
 ## Deploy
 
 The frontend and the backend are deployed separately.
@@ -122,12 +154,16 @@ Notes:
 ## Folder structure
 
 ```
+.github/workflows/ci.yml   CI: backend tests, frontend build, Docker build
+docker-compose.yml         runs frontend and backend together
 backend/
+  Dockerfile        backend image (Python 3.11, runs as a non-root user)
   agent.py          LangGraph workflow (nodes, routing, rule-based fallback)
   main.py           FastAPI app: chat (WebSocket + REST), feedback, agent API, rate limiter
   db.py             SQLite: tickets, message log, feedback
   test_app.py       tests
 frontend/
+  Dockerfile        builds the React app, then serves it with nginx
   src/hooks/useChat.js              WebSocket connection, reconnect, REST fallback, saved history
   src/components/                   ChatWidget, MessageBubble, ChatInput, AgentDashboard ...
   src/App.jsx                       Demo website and routing to the dashboard

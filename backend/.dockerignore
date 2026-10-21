@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+support.db
+test_app.py
+requirements-dev.txt
